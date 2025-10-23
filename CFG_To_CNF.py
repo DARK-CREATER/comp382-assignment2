@@ -4,13 +4,12 @@
 #- A -> a (single terminal)
 #- S -> ε (only for start symbol, if language includes empty string)
 
-
-def toCnf(grammar, start='S'):  
-
+def toCnf(grammar, start='S'):
     #initial step: formatting of input grammar
-
+    
     #counter for generating unique variable names
     varCounter = [0]
+    
     #makes new var name thats unused
     def newVar():
         varCounter[0] += 1
@@ -24,10 +23,29 @@ def toCnf(grammar, start='S'):
     #turns format into list of productions
     rules = {var: list(prods) for var, prods in grammar.items()}
     
-
-
-    #step 1: get rid of ε productions
+    #step 0: eliminate start symbol from rhs
+    #check if start symbol appears on right side of any production
+    startOnRhs = False
+    for var, prods in rules.items():
+        for prod in prods:
+            if start in prod:
+                startOnRhs = True
+                break
+        if startOnRhs:
+            break
     
+    #create new start symbol if needed
+    if startOnRhs:
+        newStart = 'S0'
+        #make sure new start symbol doesnt already exist
+        while newStart in rules:
+            newStart = newVar()
+        #add new start production
+        rules[newStart] = [start]
+        #update start symbol
+        start = newStart
+    
+    #step 1: get rid of ε productions
     #find all nullable variables and store in set
     nullable = set()
     
@@ -55,7 +73,6 @@ def toCnf(grammar, start='S'):
     newRules = {}
     for var, prods in rules.items():
         newRules[var] = []
-        
         for prod in prods:
             if prod == 'ε':
                 continue
@@ -93,17 +110,14 @@ def toCnf(grammar, start='S'):
     
     rules = newRules
     
-
-
-
     #step 2: eliminate unit productions
-    
     #find all variables that are reachable via unit productions
     newRules = {}
     for var in rules:
         reachable = {var}
         toCheck = [var]
-        #bfs to find all reachable variables 
+        
+        #bfs to find all reachable variables
         while toCheck:
             current = toCheck.pop()
             for prod in rules.get(current, []):
@@ -123,16 +137,10 @@ def toCnf(grammar, start='S'):
     
     rules = newRules
     
-
-
-
     #step 3: convert to cnf form
-    
-
-
     #map each terminal to a variable
     newRules = {}
-    terminalVars = {}  
+    terminalVars = {}
     
     #iterate through all productions and convert to cnf
     for var, prods in rules.items():
@@ -145,15 +153,17 @@ def toCnf(grammar, start='S'):
             if prod == 'ε':
                 newRules[var].append(prod)
                 continue
+            
             #if single symbol and terminal
             if len(prod) == 1 and isTerminal(prod):
                 newRules[var].append(prod)
                 continue
+            
             #if two symbols and both variables
             if len(prod) == 2 and all(not isTerminal(s) for s in prod):
                 newRules[var].append(prod)
                 continue
-                        
+            
             #replace all terminals with variables
             prodVars = []
             #iterate each symbol in production
@@ -187,7 +197,6 @@ def toCnf(grammar, start='S'):
     
     return newRules
 
-
 #parse production string into indivudal symbols, vars can be multichar, terminals lowercase
 def parseSymbols(production):
     symbols = []
@@ -208,6 +217,11 @@ def parseSymbols(production):
             i += 1
     return symbols
 
+#helper function to display grammar
+def displayGrammar(grammar, title):
+    print(title)
+    for var in sorted(grammar.keys()):
+        print(f"  {var} -> {' | '.join(grammar[var])}")
 
 #test 1: multiple nullable symbols
 g1 = {
@@ -216,10 +230,9 @@ g1 = {
     'B': ['ε', 'b'],
     'C': ['c']
 }
+displayGrammar(g1, "Test 1 - Multiple nullable symbols (Initial CFG):")
 result1 = toCnf(g1)
-print("Test 1 - Multiple nullable symbols:")
-for var in sorted(result1.keys()):
-    print(f"  {var} -> {' | '.join(result1[var])}")
+displayGrammar(result1, "Test 1 - Multiple nullable symbols (CNF):")
 
 #test 2: long production
 g2 = {
@@ -230,10 +243,10 @@ g2 = {
     'D': ['d'],
     'E': ['e']
 }
+print()
+displayGrammar(g2, "Test 2 - Long production (Initial CFG):")
 result2 = toCnf(g2)
-print("\nTest 2 - Long production:")
-for var in sorted(result2.keys()):
-    print(f"  {var} -> {' | '.join(result2[var])}")
+displayGrammar(result2, "Test 2 - Long production (CNF):")
 
 #test 3: unit productions chain
 g3 = {
@@ -242,7 +255,18 @@ g3 = {
     'B': ['C', 'c'],
     'C': ['d']
 }
+print()
+displayGrammar(g3, "Test 3 - Unit productions chain (Initial CFG):")
 result3 = toCnf(g3)
-print("\nTest 3 - Unit productions chain:")
-for var in sorted(result3.keys()):
-    print(f"  {var} -> {' | '.join(result3[var])}")
+displayGrammar(result3, "Test 3 - Unit productions chain (CNF):")
+
+
+#test 4: start symbol on rhs
+g4 = {
+    'S': ['aSb', 'A'],
+    'A': ['S', 'a']
+}
+print()
+displayGrammar(g4, "Test 4 - Start symbol on RHS (Initial CFG):")
+result4 = toCnf(g4)
+displayGrammar(result4, "Test 4 - Start symbol on RHS (CNF):")
