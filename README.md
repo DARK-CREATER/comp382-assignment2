@@ -2,9 +2,6 @@
 
 This project implements a complete pipeline for converting a **Context-Free Grammar (CFG)** into **Chomsky Normal Form (CNF)**. The conversion is carried out through a sequence of structured transformations that preserve the language of the original grammar.
 
-#
-ALL FILES CAN BE FOUND USING THE LINK PROVIDED IN “GitHub_Link.txt”
-#
 
 ## Overview
 
